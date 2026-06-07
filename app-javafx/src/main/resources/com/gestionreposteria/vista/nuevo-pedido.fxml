@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+
+<VBox spacing="20" style="-fx-padding: 30; -fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gestionreposteria.controlador.NuevoPedidoController">
+    
+    <Label text="Registrar Nuevo Pedido" style="-fx-font-size: 22; -fx-font-weight: bold;" />
+
+    <HBox spacing="15">
+        <TextField fx:id="txtNombreCliente" promptText="Nombre del Cliente" prefWidth="250" />
+        <TextField fx:id="txtTelefonoCliente" promptText="Teléfono" prefWidth="200" />
+    </HBox>
+
+    <Separator />
+
+    <HBox spacing="15" alignment="CENTER_LEFT">
+        <ComboBox fx:id="cbProductos" promptText="Seleccionar Producto..." prefWidth="250" />
+        <TextField fx:id="txtCantidad" promptText="Cant." prefWidth="70" />
+        <Button text="Añadir al Pedido" onAction="#agregarItem" style="-fx-background-color: #0d6efd; -fx-text-fill: white;" />
+    </HBox>
+
+    <TableView fx:id="tablaPedido" prefHeight="200">
+        <columns>
+            <TableColumn text="Producto" prefWidth="250">
+                <cellValueFactory>
+                    <javafx.scene.control.cell.PropertyValueFactory property="nombreProducto" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Cantidad" prefWidth="100">
+                <cellValueFactory>
+                    <javafx.scene.control.cell.PropertyValueFactory property="cantidad" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Subtotal ($)" prefWidth="150">
+                <cellValueFactory>
+                    <javafx.scene.control.cell.PropertyValueFactory property="subtotal" />
+                </cellValueFactory>
+            </TableColumn>
+        </columns>
+    </TableView>
+
+    <HBox spacing="20">
+        <TextArea fx:id="txtObservaciones" promptText="Observaciones (Ej. Escribir 'Feliz Cumple', sin crema, etc.)" prefRowCount="3" prefWidth="400" />
+        
+        <VBox alignment="BOTTOM_RIGHT" HBox.hgrow="ALWAYS">
+            <Label text="Presupuesto Total:" style="-fx-font-size: 16; -fx-text-fill: #6c757d;" />
+            <Label fx:id="lblTotal" text="\$ 0.00" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #198754;" />
+            <Button text="Confirmar Pedido" onAction="#guardarPedido" style="-fx-font-size: 14; -fx-padding: 10 20; -fx-background-color: #198754; -fx-text-fill: white; -fx-margin-top: 10;" />
+        </VBox>
+    </HBox>
+
+</VBox>

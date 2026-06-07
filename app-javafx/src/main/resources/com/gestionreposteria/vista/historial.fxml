@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20" style="-fx-padding: 30; -fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gestionreposteria.controlador.HistorialController">
+    
+    <Label text="Historial y Rendimiento de Ventas" style="-fx-font-size: 22; -fx-font-weight: bold;" />
+
+    <HBox spacing="15" alignment="CENTER_LEFT" style="-fx-background-color: #f8f9fa; -fx-padding: 15; -fx-border-color: #dee2e6; -fx-border-radius: 5;">
+        <Label text="Filtrar por fecha:" />
+        <DatePicker fx:id="dpDesde" promptText="Desde..." prefWidth="130" />
+        <DatePicker fx:id="dpHasta" promptText="Hasta..." prefWidth="130" />
+        <Button text="Aplicar Filtro" onAction="#filtrarDatos" style="-fx-background-color: #6c757d; -fx-text-fill: white;" />
+        
+        <Region HBox.hgrow="ALWAYS" />
+        
+        <Button text="Exportar a .TXT" onAction="#exportarReporte" style="-fx-background-color: #198754; -fx-text-fill: white; -fx-font-weight: bold;" />
+    </HBox>
+
+    <BarChart fx:id="graficoVentas" animated="false" VBox.vgrow="ALWAYS">
+        <xAxis>
+            <CategoryAxis fx:id="ejeMeses" label="Meses" />
+        </xAxis>
+        <yAxis>
+            <NumberAxis fx:id="ejeIngresos" label="Ingresos Brutos ($)" />
+        </yAxis>
+    </BarChart>
+
+</VBox>

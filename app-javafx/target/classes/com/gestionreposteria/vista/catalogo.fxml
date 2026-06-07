@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="15" style="-fx-padding: 30; -fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gestionreposteria.controlador.CatalogoController">
+    
+    <Label text="Gestión de Catálogo y Precios" style="-fx-font-size: 22; -fx-font-weight: bold;" />
+
+    <TableView fx:id="tablaCatalogo" VBox.vgrow="ALWAYS" prefHeight="250">
+        <columns>
+            <TableColumn text="ID" prefWidth="40">
+                <cellValueFactory><javafx.scene.control.cell.PropertyValueFactory property="id" /></cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Nombre del Producto" prefWidth="200">
+                <cellValueFactory><javafx.scene.control.cell.PropertyValueFactory property="nombre" /></cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Categoría" prefWidth="120">
+                <cellValueFactory><javafx.scene.control.cell.PropertyValueFactory property="categoria" /></cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Descripción" prefWidth="300">
+                <cellValueFactory><javafx.scene.control.cell.PropertyValueFactory property="descripcion" /></cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Precio Vigente ($)" prefWidth="120">
+                <cellValueFactory><javafx.scene.control.cell.PropertyValueFactory property="precio" /></cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Estado" prefWidth="100">
+                <cellValueFactory><javafx.scene.control.cell.PropertyValueFactory property="estado" /></cellValueFactory>
+            </TableColumn>
+        </columns>
+    </TableView>
+
+    <Separator />
+
+    <Label text="Editor de Producto" style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #495057;" />
+    
+    <HBox spacing="15">
+        <TextField fx:id="txtNombre" promptText="Nombre" prefWidth="200" />
+        <ComboBox fx:id="cbCategoria" promptText="Categoría" prefWidth="150" />
+        <TextField fx:id="txtPrecio" promptText="Precio (Ej: 15000)" prefWidth="120" />
+        <ComboBox fx:id="cbEstado" promptText="Estado" prefWidth="120" />
+    </HBox>
+    
+    <HBox spacing="15" alignment="CENTER_LEFT">
+        <TextField fx:id="txtDescripcion" promptText="Descripción del producto..." HBox.hgrow="ALWAYS" />
+        <Button text="Limpiar Formulario" onAction="#limpiarFormulario" style="-fx-background-color: #6c757d; -fx-text-fill: white;" />
+        <Button text="Guardar Cambios" onAction="#guardarProducto" style="-fx-background-color: #0d6efd; -fx-text-fill: white; -fx-font-weight: bold;" />
+    </HBox>
+
+</VBox>
