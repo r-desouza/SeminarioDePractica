@@ -11,7 +11,6 @@ public class DetallePedido {
         this.subtotal = subtotal;
     }
 
-    // --- Getters (Requeridos por el PropertyValueFactory de la Tabla) ---
     public String getNombreProducto() {
         return nombreProducto;
     }

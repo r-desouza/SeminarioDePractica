@@ -17,7 +17,6 @@ public class ProductoCatalogo {
         this.estado = "Activo";
     }
 
-    // --- Getters (Requeridos por la Tabla) ---
     public int getId() {
         return id;
     }
@@ -42,7 +41,6 @@ public class ProductoCatalogo {
         return estado;
     }
 
-    // --- Setters (Requeridos para editar) ---
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
