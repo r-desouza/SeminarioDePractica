@@ -8,6 +8,10 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Alert;
 import javafx.scene.control.DatePicker;
 import java.time.LocalDate;
+import java.util.Map;
+
+import com.gestionreposteria.dao.HistorialDAO;
+import com.gestionreposteria.util.GeneradorReporte;
 
 public class HistorialController {
 
@@ -22,29 +26,38 @@ public class HistorialController {
     @FXML
     private NumberAxis ejeIngresos;
 
+    private XYChart.Series<String, Number> serieVentas;
+
+    // Instanciamos nuestro nuevo DAO
+    private HistorialDAO historialDAO = new HistorialDAO();
+
     @FXML
     public void initialize() {
-        // Inicializar los DatePickers con el mes actual por defecto
-        dpDesde.setValue(LocalDate.now().withDayOfMonth(1));
+        // Por defecto, mostramos los últimos 3 meses hasta hoy
+        dpDesde.setValue(LocalDate.now().withDayOfMonth(1).minusMonths(3));
         dpHasta.setValue(LocalDate.now());
 
-        cargarGraficoFicticio();
+        cargarGraficoReal();
     }
 
-    private void cargarGraficoFicticio() {
-        // Limpiamos el gráfico por si hay datos previos
-        graficoVentas.getData().clear();
+    // NUEVO MÉTODO: Carga los datos reales desde MySQL
+    private void cargarGraficoReal() {
+        if (dpDesde.getValue() == null || dpHasta.getValue() == null)
+            return;
 
-        // Creamos una "Serie" de datos para el gráfico de barras
-        XYChart.Series<String, Number> serieVentas = new XYChart.Series<>();
+        graficoVentas.getData().clear();
+        serieVentas = new XYChart.Series<>();
         serieVentas.setName("Ingresos Mensuales");
 
-        // Agregamos puntos de datos ficticios para poblar el gráfico
-        serieVentas.getData().add(new XYChart.Data<>("Marzo", 185000));
-        serieVentas.getData().add(new XYChart.Data<>("Abril", 240000));
-        serieVentas.getData().add(new XYChart.Data<>("Mayo", 310500));
-        serieVentas.getData().add(new XYChart.Data<>("Junio", 125000));
-        // Inyectamos la serie al gráfico
+        // 1. Obtener datos reales
+        Map<String, Double> datosBD = historialDAO.obtenerVentasPorMes(dpDesde.getValue(), dpHasta.getValue());
+
+        // 2. Poblar el gráfico
+        for (Map.Entry<String, Double> entry : datosBD.entrySet()) {
+            serieVentas.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
+        }
+
+        // 3. Añadir la serie al gráfico
         graficoVentas.getData().add(serieVentas);
     }
 
@@ -55,23 +68,27 @@ public class HistorialController {
             return;
         }
 
-        String fechaInicio = dpDesde.getValue().toString();
-        String fechaFin = dpHasta.getValue().toString();
-
-        mostrarAlerta("Filtro Aplicado",
-                "Simulando carga de base de datos desde " + fechaInicio + " hasta " + fechaFin + ".");
-        // Usar queries en un futuro real para obtener datos filtrados y actualizar el
-        // gráfico dinámicamente
+        // Al darle al botón "Filtrar", simplemente recargamos el gráfico
+        cargarGraficoReal();
     }
 
     @FXML
     private void exportarReporte() {
-        // Simulación para Exportar historial a un formato de lectura (.txt)
-        System.out.println("--- GENERANDO REPORTE DE VENTAS ---");
-        System.out.println("Procesando datos para exportación...");
+        if (dpDesde.getValue() == null || dpHasta.getValue() == null) {
+            mostrarAlerta("Atención", "Debe seleccionar ambas fechas antes de exportar.");
+            return;
+        }
+
+        String fechaInicio = dpDesde.getValue().toString();
+        String fechaFin = dpHasta.getValue().toString();
+
+        String nombreArchivo = "Reporte_Ventas_" + fechaInicio + "_a_" + fechaFin + ".txt";
+
+        GeneradorReporte generador = new GeneradorReporte();
+        generador.exportarHistorialATxt(nombreArchivo, fechaInicio, fechaFin, serieVentas);
 
         mostrarAlerta("Reporte Generado",
-                "El historial de ventas se ha exportado exitosamente como 'Reporte_Ventas_Mensual.txt' en la carpeta Documentos.");
+                "El historial se ha exportado exitosamente como '" + nombreArchivo + "'.");
     }
 
     private void mostrarAlerta(String titulo, String mensaje) {

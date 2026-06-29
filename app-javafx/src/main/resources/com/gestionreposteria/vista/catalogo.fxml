@@ -6,7 +6,7 @@
 <VBox spacing="15" style="-fx-padding: 30; -fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gestionreposteria.controlador.CatalogoController">
     
     <Label text="Gestión de Catálogo y Precios" style="-fx-font-size: 22; -fx-font-weight: bold;" />
-
+    <Button text="Exportar Lista de Precios" onAction="#exportarPrecios" />
     <TableView fx:id="tablaCatalogo" VBox.vgrow="ALWAYS" prefHeight="250">
         <columns>
             <TableColumn text="ID" prefWidth="40">

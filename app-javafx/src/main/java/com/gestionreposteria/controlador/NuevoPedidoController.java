@@ -5,6 +5,11 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import com.gestionreposteria.modelo.DetallePedido;
+import com.gestionreposteria.modelo.ProductoCatalogo;
+import com.gestionreposteria.modelo.Cliente;
+import com.gestionreposteria.dao.ProductoDAO;
+import com.gestionreposteria.dao.PedidoDAO;
+import java.util.List;
 
 public class NuevoPedidoController {
 
@@ -13,7 +18,7 @@ public class NuevoPedidoController {
     @FXML
     private TextField txtTelefonoCliente;
     @FXML
-    private ComboBox<ProductoDemo> cbProductos;
+    private ComboBox<ProductoCatalogo> cbProductos; // Ahora usa el modelo real
     @FXML
     private TextField txtCantidad;
     @FXML
@@ -23,24 +28,27 @@ public class NuevoPedidoController {
     @FXML
     private Label lblTotal;
 
-    // Lista observable para que la tabla se actualice sola al agregar items
+    // Lista observable para que la tabla se actualice sola
     private ObservableList<DetallePedido> itemsPedido = FXCollections.observableArrayList();
     private double totalPresupuesto = 0.0;
 
+    // Instancia los motores de base de datos
+    private ProductoDAO productoDAO = new ProductoDAO();
+    private PedidoDAO pedidoDAO = new PedidoDAO();
+
     @FXML
     public void initialize() {
-        // Inicializar la tabla
+        // Inicializa la tabla
         tablaPedido.setItems(itemsPedido);
 
-        // Simular productos traídos de la base de datos
-        cbProductos.getItems().addAll(
-                new ProductoDemo(1, "Tarta Cabsha", 15000.00),
-                new ProductoDemo(2, "Torta Selva Negra", 22000.00));
+        // Carga los productos directamente desde MySQL
+        List<ProductoCatalogo> productosBD = productoDAO.listarActivos();
+        cbProductos.getItems().addAll(productosBD);
     }
 
     @FXML
     private void agregarItem() {
-        ProductoDemo prodSeleccionado = cbProductos.getValue();
+        ProductoCatalogo prodSeleccionado = cbProductos.getValue();
         String cantStr = txtCantidad.getText();
 
         if (prodSeleccionado != null && !cantStr.isEmpty()) {
@@ -48,8 +56,12 @@ public class NuevoPedidoController {
                 int cantidad = Integer.parseInt(cantStr);
                 double subtotal = prodSeleccionado.getPrecio() * cantidad;
 
-                // Crear el detalle y agregarlo a la tabla
-                DetallePedido nuevoDetalle = new DetallePedido(prodSeleccionado.getNombre(), cantidad, subtotal);
+                // Crea el detalle enviando el ID a MySQL y el Nombre a la pantalla
+                DetallePedido nuevoDetalle = new DetallePedido(
+                        prodSeleccionado.getId(),
+                        prodSeleccionado.getNombre(),
+                        cantidad,
+                        subtotal);
                 itemsPedido.add(nuevoDetalle);
 
                 // Actualizar el presupuesto total
@@ -61,64 +73,56 @@ public class NuevoPedidoController {
                 cbProductos.getSelectionModel().clearSelection();
 
             } catch (NumberFormatException e) {
-                mostrarAlerta("Error", "La cantidad debe ser un número entero.");
+                mostrarAlerta("Error", "La cantidad debe ser un número entero.", Alert.AlertType.ERROR);
             }
         } else {
-            mostrarAlerta("Atención", "Seleccione un producto e ingrese una cantidad.");
+            mostrarAlerta("Atención", "Seleccione un producto e ingrese una cantidad.", Alert.AlertType.WARNING);
         }
     }
 
     @FXML
     private void guardarPedido() {
-        // Aca irá la conexión a MySQL para guardar el pedido
-        System.out.println("Guardando pedido para: " + txtNombreCliente.getText());
-        System.out.println("Total a cobrar: $" + totalPresupuesto);
-        System.out.println("Observaciones: " + txtObservaciones.getText());
+        // Validaciones básicas
+        if (txtNombreCliente.getText().isEmpty()) {
+            mostrarAlerta("Datos incompletos", "Por favor, ingrese el nombre del cliente.", Alert.AlertType.WARNING);
+            return;
+        }
+        if (itemsPedido.isEmpty()) {
+            mostrarAlerta("Error", "Debe agregar al menos un producto al pedido.", Alert.AlertType.ERROR);
+            return;
+        }
 
-        mostrarAlerta("Éxito", "Pedido registrado exitosamente (Simulación)");
+        // Arma el objeto Cliente
+        Cliente nuevoCliente = new Cliente(
+                0, // MySQL generará el ID automáticamente
+                txtNombreCliente.getText(),
+                txtTelefonoCliente.getText(),
+                "");
 
-        // Limpiar todo después de guardar
-        itemsPedido.clear();
-        totalPresupuesto = 0.0;
-        lblTotal.setText("$ 0.00");
-        txtNombreCliente.clear();
-        txtTelefonoCliente.clear();
-        txtObservaciones.clear();
+        // Ejecuta la Transacción SQL a través del DAO
+        boolean guardadoExitoso = pedidoDAO.registrarPedidoCompleto(nuevoCliente, totalPresupuesto, itemsPedido);
+
+        if (guardadoExitoso) {
+            mostrarAlerta("Éxito", "El pedido ha sido registrado correctamente en la base de datos.",
+                    Alert.AlertType.INFORMATION);
+
+            // Limpiar todo después de guardar
+            itemsPedido.clear();
+            totalPresupuesto = 0.0;
+            lblTotal.setText("$ 0.00");
+            txtNombreCliente.clear();
+            txtTelefonoCliente.clear();
+            txtObservaciones.clear();
+        } else {
+            mostrarAlerta("Error de BD", "Ocurrió un problema al guardar el pedido en MySQL.", Alert.AlertType.ERROR);
+        }
     }
 
-    private void mostrarAlerta(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipo) {
+        Alert alert = new Alert(tipo);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
     }
-
-    // Clases temporal
-
-    public static class ProductoDemo {
-        private int id;
-        private String nombre;
-        private double precio;
-
-        public ProductoDemo(int id, String nombre, double precio) {
-            this.id = id;
-            this.nombre = nombre;
-            this.precio = precio;
-        }
-
-        public String getNombre() {
-            return nombre;
-        }
-
-        public double getPrecio() {
-            return precio;
-        }
-
-        @Override
-        public String toString() {
-            return nombre + " ($" + precio + ")";
-        }
-    }
-
 }

@@ -5,6 +5,8 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import java.time.LocalDate;
+
+import com.gestionreposteria.dao.AgendaDAO;
 import com.gestionreposteria.modelo.PedidoAgenda;
 
 public class AgendaController {
@@ -16,18 +18,14 @@ public class AgendaController {
 
     private ObservableList<PedidoAgenda> listaPedidos = FXCollections.observableArrayList();
 
+    private AgendaDAO agendaDAO = new AgendaDAO();
+
     @FXML
     public void initialize() {
         tablaAgenda.setItems(listaPedidos);
         cbEstado.getItems().addAll("Pendiente", "En producción", "Entregado");
 
-        // Datos para poblar la tabla
-        listaPedidos.addAll(
-                new PedidoAgenda(1, LocalDate.now().toString(), "10:00", "Escribir 'Feliz Cumple'.", 37000.0,
-                        "Pendiente"),
-                new PedidoAgenda(2, LocalDate.now().plusDays(1).toString(), "15:30", "Sin TACC", 18000.0, "Pendiente"),
-                new PedidoAgenda(3, LocalDate.now().plusDays(5).toString(), "12:00", "Detalle de flores", 30000.0,
-                        "Pendiente"));
+        cargarPedidosDeBD();
 
         // Resaltar pedidos urgentes
         tablaAgenda.setRowFactory(tv -> new TableRow<PedidoAgenda>() {
@@ -53,23 +51,28 @@ public class AgendaController {
         });
     }
 
+    private void cargarPedidosDeBD() {
+        listaPedidos.clear();
+        listaPedidos.addAll(agendaDAO.listarPedidos());
+    }
+
     @FXML
     private void actualizarEstado() {
         PedidoAgenda seleccionado = tablaAgenda.getSelectionModel().getSelectedItem();
         String nuevoEstado = cbEstado.getValue();
 
         if (seleccionado != null && nuevoEstado != null) {
-            // Actualizamos el objeto en memoria
-            seleccionado.setEstado(nuevoEstado);
-            tablaAgenda.refresh(); // Fuerza a la tabla a mostrar el nuevo texto
+            // Guardar en Base de Datos
+            if (agendaDAO.actualizarEstado(seleccionado.getIdPedido(), nuevoEstado)) {
+                seleccionado.setEstado(nuevoEstado);
+                tablaAgenda.refresh();
 
-            // Cumplimiento parcial del caso de uso CP-005
-            if (nuevoEstado.equals("Entregado")) {
-                mostrarAlerta("Cobro y Entrega", "El pedido #" + seleccionado.getIdPedido()
-                        + " está listo para ser entregado. Asegúrese de cobrar el saldo final.");
+                if (nuevoEstado.equals("Entregado")) {
+                    mostrarAlerta("Cobro y Entrega", "Pedido #" + seleccionado.getIdPedido() + " entregado.");
+                }
+            } else {
+                mostrarAlerta("Error", "No se pudo actualizar la BD.");
             }
-        } else {
-            mostrarAlerta("Atención", "Debe seleccionar un pedido de la tabla y elegir un nuevo estado del menú.");
         }
     }
 

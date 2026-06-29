@@ -5,6 +5,10 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import com.gestionreposteria.modelo.ProductoCatalogo;
+import com.gestionreposteria.util.GeneradorReporte;
+import com.gestionreposteria.dao.ProductoDAO; // Importamos el DAO
+import java.util.List;
+import com.gestionreposteria.util.GeneradorReporte;
 
 public class CatalogoController {
 
@@ -22,23 +26,20 @@ public class CatalogoController {
     private TextField txtDescripcion;
 
     private ObservableList<ProductoCatalogo> listaProductos = FXCollections.observableArrayList();
-    private ProductoCatalogo productoSeleccionado = null; // Guarda el producto que estamos editando
+    private ProductoCatalogo productoSeleccionado = null;
+
+    // Instanciamos el motor de base de datos
+    private ProductoDAO productoDAO = new ProductoDAO();
 
     @FXML
     public void initialize() {
-        // Inicializa opciones de los desplegables
-        cbCategoria.getItems().addAll("Tartas Dulces", "Tortas Clásicas", "Tortas Temáticas", "Postres");
+        cbCategoria.getItems().addAll(ProductoDAO.CATEGORIAS_PERMITIDAS);
         cbEstado.getItems().addAll("Activo", "Pausado");
 
-        // Llenar tabla con datos hardcodeados
-        listaProductos.addAll(
-                new ProductoCatalogo(1, "Tarta Cabsha", "Tartas Dulces",
-                        "Masa sablée con dulce de leche y baño de chocolate", 15000.0),
-                new ProductoCatalogo(2, "Torta Selva Negra", "Tortas Clásicas",
-                        "Bizcochuelo de chocolate, crema y cerezas", 22000.0));
-        tablaCatalogo.setItems(listaProductos);
+        // Cargamos los datos reales desde la base de datos
+        cargarDatosDesdeMySQL();
 
-        // Detectar cuando el usuario hace clic en una fila de la tabla
+        // Detecta cuando el usuario hace clic en una fila de la tabla
         tablaCatalogo.getSelectionModel().selectedItemProperty()
                 .addListener((obs, viejoSeleccionado, nuevoSeleccionado) -> {
                     if (nuevoSeleccionado != null) {
@@ -46,6 +47,14 @@ public class CatalogoController {
                         cargarDatosEnFormulario(nuevoSeleccionado);
                     }
                 });
+    }
+
+    // Trae los datos de MySQL y los inyecta en la tabla
+    private void cargarDatosDesdeMySQL() {
+        listaProductos.clear();
+        List<ProductoCatalogo> productosBD = productoDAO.listarTodos(); // Consultamos a la BD
+        listaProductos.addAll(productosBD); // Llenamos la lista observable
+        tablaCatalogo.setItems(listaProductos); // Actualizamos la vista
     }
 
     private void cargarDatosEnFormulario(ProductoCatalogo p) {
@@ -77,30 +86,41 @@ public class CatalogoController {
 
         try {
             double precioNumerico = Double.parseDouble(txtPrecio.getText());
+            String categoria = cbCategoria.getValue() != null ? cbCategoria.getValue() : "Tortas";
+            String estado = cbEstado.getValue() != null ? cbEstado.getValue() : "Activo";
 
             if (productoSeleccionado == null) {
                 // Es un producto NUEVO
-                int nuevoId = listaProductos.size() + 1; // ID ficticio autoincremental
+                // Pasamos 0 como ID porque MySQL se encarga del AUTO_INCREMENT
                 ProductoCatalogo nuevoProd = new ProductoCatalogo(
-                        nuevoId, txtNombre.getText(), cbCategoria.getValue(),
-                        txtDescripcion.getText(), precioNumerico);
-                if (cbEstado.getValue() != null)
-                    nuevoProd.setEstado(cbEstado.getValue());
+                        0, txtNombre.getText(), categoria, txtDescripcion.getText(), precioNumerico);
+                nuevoProd.setEstado(estado);
 
-                listaProductos.add(nuevoProd);
-                mostrarAlerta("Éxito", "Nuevo producto agregado al catálogo.", Alert.AlertType.INFORMATION);
+                // Guardamos en la Base de Datos
+                if (productoDAO.registrar(nuevoProd)) {
+                    mostrarAlerta("Éxito", "Nuevo producto guardado en la base de datos.", Alert.AlertType.INFORMATION);
+                } else {
+                    mostrarAlerta("Error", "No se pudo guardar en la base de datos.", Alert.AlertType.ERROR);
+                }
+
             } else {
                 // Es un producto existente
                 productoSeleccionado.setNombre(txtNombre.getText());
-                productoSeleccionado.setCategoria(cbCategoria.getValue());
+                productoSeleccionado.setCategoria(categoria);
                 productoSeleccionado.setDescripcion(txtDescripcion.getText());
                 productoSeleccionado.setPrecio(precioNumerico);
-                if (cbEstado.getValue() != null)
-                    productoSeleccionado.setEstado(cbEstado.getValue());
+                productoSeleccionado.setEstado(estado);
 
-                tablaCatalogo.refresh(); // Actualiza la vista de la tabla
-                mostrarAlerta("Éxito", "Producto actualizado correctamente.", Alert.AlertType.INFORMATION);
+                // Actualizamos en la Base de Datos
+                if (productoDAO.actualizar(productoSeleccionado)) {
+                    mostrarAlerta("Éxito", "Producto actualizado en la base de datos.", Alert.AlertType.INFORMATION);
+                } else {
+                    mostrarAlerta("Error", "No se pudo actualizar en la base de datos.", Alert.AlertType.ERROR);
+                }
             }
+
+            // Recargamos la tabla para que refleje lo que hay en la DB
+            cargarDatosDesdeMySQL();
             limpiarFormulario();
 
         } catch (NumberFormatException e) {
@@ -116,4 +136,20 @@ public class CatalogoController {
         alert.showAndWait();
     }
 
+    @FXML
+    private void exportarPrecios() {
+        // Reutilizamos el DAO para obtener la lista más reciente de MySQL
+        List<ProductoCatalogo> productosBD = productoDAO.listarTodos();
+
+        // Llamamos al generador de archivos
+        boolean exito = GeneradorReporte.exportarCatalogoTxt(productosBD);
+
+        if (exito) {
+            mostrarAlerta("Exportación Exitosa",
+                    "El archivo 'Lista_Precios_Reposteria.txt' se ha generado correctamente en la carpeta del proyecto.",
+                    Alert.AlertType.INFORMATION);
+        } else {
+            mostrarAlerta("Error", "No se pudo generar el archivo de reporte.", Alert.AlertType.ERROR);
+        }
+    }
 }
